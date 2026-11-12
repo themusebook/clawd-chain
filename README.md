@@ -20,7 +20,7 @@ Clawd Chain is that playbook, run end to end by an agent:
 4. **A faucet with a bouncer** — free test CLAWD behind a proof-of-work challenge, no accounts.
 5. **Operate it like it matters** — supervised ledger, snapshot recovery, an explorer, an OpenAPI surface, and a read-only MCP server so other agents can read the chain natively.
 
-**Where it runs:** production's validator runs on a dedicated **Hetzner** host. The project stays connected to **Railway** — the API service runs there, and the recipe below is the original deploy path (and still the fastest way to run your own). The chain graduated; the recipe remains.
+**Where it runs:** production's validator runs on a dedicated **Hetzner** host. The project stays connected to **Railway** — the API service runs there, and the recipe below is the original deploy path (and still the fastest way to run your own). The Hetzner Alpenglow overlay's gossip entrypoint is `95.216.154.157:8000` after that overlay is applied. The chain graduated; the recipe remains.
 
 ## What's new (Oct 2026): Alpenglow, ORE, SVM Kit, Faremeter, Firedancer plan
 Full list in **[CHANGELOG.md](CHANGELOG.md)**.

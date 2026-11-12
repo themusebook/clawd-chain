@@ -7,9 +7,30 @@ services:
     # Agave 4.3 asserts io_uring support at start; Docker's default seccomp profile blocks it
     # (panic: assertion failed: io_uring_supported()). Verified on this host 2026-10-22.
     security_opt: ["seccomp=unconfined"]
+    # Host network so the process can bind the public IPv4. Published ports are ignored then.
+    network_mode: host
+    ports: !override []
     volumes: !override ["clawd-ledger-alpenglow:/data"]
     environment:
       FAUCET_PUBKEY: ${FAUCET_PUBKEY}
       LEDGER_RESET_TOKEN: ${LEDGER_RESET_TOKEN:-alpenglow-1}
+      BIND_ADDRESS: 95.216.154.157
+      GOSSIP_PORT: "8000"
+      DYNAMIC_PORT_RANGE: 8000-8020
+  faucet:
+    environment:
+      VALIDATOR_RPC: http://95.216.154.157:8080
+  explorer:
+    environment:
+      VALIDATOR_RPC: http://95.216.154.157:8080
+  api:
+    environment:
+      VALIDATOR_RPC: http://95.216.154.157:8080
+  payments:
+    environment:
+      CLAWD_RPC: http://95.216.154.157:8080
+  percolator-launch:
+    environment:
+      CLAWD_RPC: http://95.216.154.157:8080
 volumes:
   clawd-ledger-alpenglow: { name: clawd-ledger-alpenglow }
