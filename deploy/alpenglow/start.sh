@@ -36,14 +36,33 @@ if [ ! -f /data/ledger/genesis.bin ]; then
     done < "$PROGRAMS_DIR/programs.manifest"
   fi
 fi
-solana-test-validator --ledger /data/ledger --bind-address 127.0.0.1 --alpenglow \
+# Agave 4.3.2 advertises gossip from --bind-address only when that address is a real
+# host IP. 0.0.0.0 and :: still advertise 127.0.0.1, so reject them.
+BIND_ADDRESS=${BIND_ADDRESS:-127.0.0.1}
+case "$BIND_ADDRESS" in
+  0.0.0.0|::)
+    echo "BIND_ADDRESS=$BIND_ADDRESS would still advertise 127.0.0.1 on Agave 4.3.2. Set the host public IP." >&2
+    exit 1
+    ;;
+esac
+GOSSIP_PORT=${GOSSIP_PORT:-8000}
+DYNAMIC_PORT_RANGE=${DYNAMIC_PORT_RANGE:-8000-8020}
+RPC_URL="http://${BIND_ADDRESS}:8899"
+solana-test-validator --ledger /data/ledger --bind-address "$BIND_ADDRESS" --alpenglow \
+  --gossip-port "$GOSSIP_PORT" --dynamic-port-range "$DYNAMIC_PORT_RANGE" \
   --rpc-port 8899 --limit-blockstore-size ${LEDGER_LIMIT:-2000000} --quiet ${FUND:-} $CLONE &
 VPID=$!
 # Wait for RPC, then report Alpenglow status.
-for i in $(seq 1 120); do solana -u http://127.0.0.1:8899 cluster-version >/dev/null 2>&1 && break; sleep 2; done
-solana -u http://127.0.0.1:8899 feature status A1pengvuM6JEcyNuTnMqepBKhwHE3N6PmUrdATGawhJS || true
-solana -u http://127.0.0.1:8899 alpenglow-genesis-info || true
-UPSTREAM_HTTP=${UPSTREAM_HTTP:-http://127.0.0.1:8899} node /proxy.js &
+for i in $(seq 1 120); do solana -u "$RPC_URL" cluster-version >/dev/null 2>&1 && break; sleep 2; done
+solana -u "$RPC_URL" feature status A1pengvuM6JEcyNuTnMqepBKhwHE3N6PmUrdATGawhJS || true
+solana -u "$RPC_URL" alpenglow-genesis-info || true
+if [ "$BIND_ADDRESS" = "127.0.0.1" ]; then
+  UPSTREAM_HTTP=${UPSTREAM_HTTP:-http://127.0.0.1:8899}
+else
+  UPSTREAM_HTTP=${UPSTREAM_HTTP:-$RPC_URL}
+fi
+export UPSTREAM_HTTP
+node /proxy.js &
 PPID2=$!
 if [ -n "$SUPERMEMORY_API_KEY" ]; then ( while true; do node /brain/server.js || true; sleep 10; done ) & fi
 while kill -0 $VPID 2>/dev/null && kill -0 $PPID2 2>/dev/null; do sleep 2; done
